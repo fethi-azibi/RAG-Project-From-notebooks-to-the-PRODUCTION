@@ -38,5 +38,5 @@ $ pip install -r requirements.txt
 $ cp .env.example .env
 ```
 
-Set your environment variables in the `.env` file. Like `OPENAI_API_KEY` value.
+Set your environment variables in the `.env` file. Like `DEEPSEEK_API_KEY` value.
 
