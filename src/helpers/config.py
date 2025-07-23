@@ -13,5 +13,5 @@ class Settings(BaseSettings):
     class config:
         env_file = ".env"
 
-    def get_settings(self):
-        return Settings()
+def get_settings(self):
+    return Settings()
