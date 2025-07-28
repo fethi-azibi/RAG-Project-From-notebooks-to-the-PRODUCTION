@@ -27,6 +27,19 @@ class DataChunk(BaseModel):
     chunk_metadata: dict  # Additional chunk information
     chunk_order: int = Field(..., gt=0)  # Position in document (1-based)
     chunk_project_id: ObjectId  # Reference to parent project
-    
+    chunk_asset_id: ObjectId
+
     class Config:
         arbitrary_types_allowed = True  # Required for ObjectId support
+        
+    @classmethod
+    def get_indexes(cls):
+        return [
+            {
+                "key": [
+                    ("chunk_project_id", 1)
+                ],
+                "name": "chunk_project_id_index_1",
+                "unique": False
+            }
+        ]
