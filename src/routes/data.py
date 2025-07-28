@@ -2,13 +2,16 @@ import os
 import logging
 
 import aiofiles
-from fastapi import FastAPI,APIRouter,Depends, UploadFile, status
+from fastapi import FastAPI,APIRouter,Depends, UploadFile, status, Request
 from fastapi.responses import JSONResponse
 
 from models import ResponseSignal
+from models.ProjectModel import ProjectModel
+from models.ChunkModel import ChunkModel
+from models.db_schemes import DataChunk
+from .schemes.data import ProcessRequest 
 from controllers import DataController, ProjectController, ProcessController
 from helpers.config import get_settings, Settings
-from .schemes.data import ProcessRequest
 
 # Configure logging for the application
 logger = logging.getLogger('uvicorn.error')
@@ -20,7 +23,7 @@ data_router = APIRouter(
 )
 
 @data_router.post("/upload/{project_id}")
-async def upload_file(project_id: str, file: UploadFile, 
+async def upload_file(request:Request,project_id: str, file: UploadFile, 
                       app_settings: Settings = Depends(get_settings)):
     """
     Handle file upload endpoint for a specific project.
@@ -39,6 +42,10 @@ async def upload_file(project_id: str, file: UploadFile,
         - Generates unique file path to prevent naming conflicts
     """
     print("start uploading file")
+    
+    project_model = ProjectModel(db_client=request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    
     
     # Validate incoming file against configured constraints
     data_controller = DataController()
@@ -83,7 +90,7 @@ async def upload_file(project_id: str, file: UploadFile,
         )
 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(project_id: str, process_request: ProcessRequest):
+async def process_endpoint(request: Request,project_id: str, process_request: ProcessRequest):
     """
     Process uploaded file content by splitting it into chunks.
     
@@ -98,10 +105,21 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
         JSONResponse: Processing result or error message
         list: List of processed file chunks with metadata
     """
+    project_model = ProjectModel(
+        db_client=request.app.db_client
+    )
+
+    project = await project_model.get_project_or_create_one(
+        project_id=project_id
+    )
+
+
     # Extract processing parameters from request
     file_id = process_request.file_id
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
+    do_reset = process_request.do_reset
+
     
     # Initialize controller and load file content
     process_controller = ProcessController(project_id=project_id)
@@ -123,5 +141,35 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
                 "signal": ResponseSignal.PROCESSING_FAILED.value
             }
         )
+        
+    file_chunks_records = [
+        DataChunk(
+            chunk_text=chunk.page_content,
+            chunk_metadata=chunk.metadata,
+            chunk_order=i+1,
+            chunk_project_id=project.id,
 
+        )
+        for i , chunk in enumerate(file_chunks)
+    ]
+
+    chunk_model = ChunkModel(
+        db_client=request.app.db_client
+    )
+    
+    if do_reset == 1:
+        _ = await chunk_model.delete_chunks_by_project_id(
+            project_id=project.id
+        )
+
+
+    no_records = await chunk_model.insert_many_chunks(chunks=file_chunks_records)
+    
+    return JSONResponse(
+        content={
+            "signal": ResponseSignal.PROCESSING_SUCCESS.value,
+            "inserted_chunks": no_records
+        }
+    )
+    
     return file_chunks

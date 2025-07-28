@@ -5,11 +5,14 @@ services:
     ports:
       - "27007:27017"
     volumes:
-      - ./mongodb:/data/db
+      - mongodb_data:/data/db
     networks:
       - backend
     restart: always
-    command: mongod --bind_ip_all  # Critical addition
+    command: mongod --bind_ip_all
+
+volumes:
+  mongodb_data:
 
 networks:
   backend:
