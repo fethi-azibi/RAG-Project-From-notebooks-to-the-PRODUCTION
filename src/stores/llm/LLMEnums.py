@@ -3,8 +3,16 @@ from enum import Enum
 class LLMEnums(Enum):
     OPENAI = "OPENAI"
     COHERE = "COHERE"
+    DEEPSEEK = "DEEPSEEK"
+    FASTEMBED = "FASTEMBED"
+    
 
 class OpenAIEnums(Enum):
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
+    
+class DeepSeekEnums(Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
