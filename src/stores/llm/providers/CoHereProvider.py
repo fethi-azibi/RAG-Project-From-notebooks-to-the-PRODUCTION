@@ -3,6 +3,7 @@ from ..LLMEnums import CoHereEnums, DocumentTypeEnum
 import cohere
 import logging
 
+
 class CoHereProvider(LLMInterface):
     
     def __init__(self, api_key: str=None, 
@@ -71,6 +72,9 @@ class CoHereProvider(LLMInterface):
             self.logger.error("CoHere client was not set")
             return None
         
+        if isinstance(text, str):
+            text = [text]
+        
         if not self.embedding_model_id:
             self.logger.error("Embedding model for CoHere was not set")
             return None
@@ -81,7 +85,7 @@ class CoHereProvider(LLMInterface):
 
         response = self.client.embed(
             model = self.embedding_model_id,
-            texts = [self.process_text(text)],
+            texts = [self.process_text(t) for t in text],
             input_type = input_type,
             embedding_types=['float'],
         )
@@ -90,7 +94,7 @@ class CoHereProvider(LLMInterface):
             self.logger.error("Error while embedding text with CoHere")
             return None
         
-        return response.embeddings.float[0]
+        return [f for f in response.embeddings.float]
     
     def construct_prompt(self, prompt: str, role: str):
         return {

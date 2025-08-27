@@ -45,12 +45,16 @@ class FastEmbedProvider():
             self.logger.error("TextEmbedding client is not initialized.")
             return None
         
+        if isinstance(text, str):
+            text = [text]
+        
         if not self.embedding_model_id:
             self.logger.error("Embedding model ID is not set.")
             return None
+    
         
         embedding_array = list(self.client.embed(text))
-        embedding_list_of_lists = [embedding.tolist() for embedding in embedding_array][0]
+        embedding_list_of_lists = [embedding.tolist() for embedding in embedding_array]
         
         return embedding_list_of_lists
 
